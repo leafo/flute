@@ -1,0 +1,27 @@
+{
+  "name": "dizi-fingering-chart",
+  "version": "1.0.0",
+  "description": "Interactive dizi (Chinese bamboo flute) fingering chart with melody playback",
+  "main": "dist/bundle.js",
+  "scripts": {
+    "build": "esbuild src/index.jsx --bundle --outfile=dist/bundle.js --loader:.js=jsx",
+    "dev": "esbuild src/index.jsx --bundle --outfile=dist/bundle.js --watch=forever --servedir=dist --serve=:8080 --loader:.js=jsx",
+    "start": "npm run dev"
+  },
+  "keywords": [
+    "dizi",
+    "flute",
+    "fingering",
+    "music",
+    "chinese"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.2"
+  }
+}

@@ -189,6 +189,79 @@
             margin-top: 2px;
         }
 
+        .fingering-card.highlighted {
+            box-shadow: 0 0 12px #f39c12;
+            border-color: #f39c12;
+            transform: scale(1.08);
+            transition: all 0.1s ease-out;
+        }
+
+        .melody-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+
+        .melody-selector select {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 2px solid #9b59b6;
+            background: #1a1a2e;
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .melody-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .melody-controls button {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            background: #f39c12;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .melody-controls button:hover {
+            background: #e67e22;
+        }
+
+        .melody-controls button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+
+        .tempo-control input[type="range"] {
+            width: 80px;
+            accent-color: #f39c12;
+        }
+
+        .tempo-value {
+            color: #f39c12;
+            min-width: 45px;
+        }
+
         footer {
             text-align: center;
             margin-top: 15px;
@@ -237,6 +310,27 @@
                     <div class="legend-hole half"></div>
                     <span>Half</span>
                 </div>
+            </div>
+        </div>
+
+        <div class="melody-section">
+            <div class="melody-selector">
+                <select id="melody-select">
+                    <option value="0">Amazing Grace</option>
+                    <option value="1">Oh! Susanna</option>
+                    <option value="2">Home on the Range</option>
+                    <option value="3">Simple Gifts</option>
+                    <option value="4">Twinkle Twinkle</option>
+                </select>
+            </div>
+            <div class="melody-controls">
+                <button id="play-btn">▶ Play</button>
+                <button id="stop-btn">■ Stop</button>
+            </div>
+            <div class="tempo-control">
+                <label>Tempo:</label>
+                <input type="range" id="tempo-slider" min="60" max="180" value="100">
+                <span class="tempo-value" id="tempo-display">100 BPM</span>
             </div>
         </div>
 
@@ -300,6 +394,274 @@
             { semitones: 15, holes: [0, 0.5, 0, 0, 0, 0], octave: '2', degree: 'b3', technique: '½' },  // High b3
         ];
 
+        // Melodies encoded as [degree, octave, duration in beats]
+        // Degrees: 1-7 for diatonic scale, negative for rests
+        const melodies = [
+            {
+                name: "Amazing Grace",
+                tempo: 72,
+                notes: [
+                    // Amazing grace, how sweet the sound
+                    [5, 1, 1], [1, 2, 2], [3, 2, 0.5], [1, 2, 0.5], [3, 2, 2], [2, 2, 1],
+                    [1, 2, 2], [6, 1, 1], [5, 1, 2], [-1, 1, 1],
+                    // That saved a wretch like me
+                    [5, 1, 1], [1, 2, 2], [3, 2, 0.5], [1, 2, 0.5], [3, 2, 2], [2, 2, 1],
+                    [5, 2, 3], [-1, 1, 1],
+                    // I once was lost but now am found
+                    [5, 2, 1], [3, 2, 2], [5, 2, 0.5], [3, 2, 0.5], [5, 2, 2], [3, 2, 1],
+                    [1, 2, 2], [6, 1, 1], [5, 1, 2], [-1, 1, 1],
+                    // Was blind but now I see
+                    [5, 1, 1], [1, 2, 2], [3, 2, 0.5], [1, 2, 0.5], [3, 2, 2], [2, 2, 1],
+                    [1, 2, 3]
+                ]
+            },
+            {
+                name: "Oh! Susanna",
+                tempo: 120,
+                notes: [
+                    // I come from Alabama with my banjo on my knee
+                    [1, 2, 0.5], [2, 2, 0.5], [3, 2, 1], [5, 2, 1], [5, 2, 0.5], [6, 2, 0.5], [5, 2, 1], [3, 2, 1],
+                    [1, 2, 0.5], [2, 2, 0.5], [3, 2, 1], [3, 2, 1], [2, 2, 1], [1, 2, 1], [2, 2, 2],
+                    // I'm going to Louisiana my true love for to see
+                    [1, 2, 0.5], [2, 2, 0.5], [3, 2, 1], [5, 2, 1], [5, 2, 0.5], [6, 2, 0.5], [5, 2, 1], [3, 2, 1],
+                    [1, 2, 0.5], [2, 2, 0.5], [3, 2, 1], [3, 2, 1], [2, 2, 1], [2, 2, 1], [1, 2, 2],
+                    // Oh Susanna, don't you cry for me
+                    [4, 2, 1], [4, 2, 1], [6, 2, 2], [6, 2, 1], [5, 2, 1], [3, 2, 2],
+                    [1, 2, 0.5], [2, 2, 0.5], [3, 2, 1], [3, 2, 1], [2, 2, 1], [1, 2, 1], [2, 2, 2],
+                    // For I come from Alabama with my banjo on my knee
+                    [4, 2, 1], [4, 2, 1], [6, 2, 2], [6, 2, 1], [5, 2, 1], [3, 2, 1], [3, 2, 1],
+                    [1, 2, 0.5], [2, 2, 0.5], [3, 2, 1], [3, 2, 1], [2, 2, 1], [2, 2, 1], [1, 2, 2]
+                ]
+            },
+            {
+                name: "Home on the Range",
+                tempo: 90,
+                notes: [
+                    // Oh give me a home where the buffalo roam
+                    [1, 2, 1], [1, 2, 2], [3, 2, 1], [5, 2, 2], [5, 2, 1],
+                    [6, 2, 2], [5, 2, 1], [3, 2, 2], [1, 2, 1],
+                    // Where the deer and the antelope play
+                    [2, 2, 2], [2, 2, 1], [4, 2, 2], [3, 2, 1],
+                    [2, 2, 2], [1, 2, 1], [7, 1, 3],
+                    // Where seldom is heard a discouraging word
+                    [7, 1, 1], [1, 2, 2], [3, 2, 1], [5, 2, 2], [5, 2, 1],
+                    [6, 2, 2], [5, 2, 1], [3, 2, 3],
+                    // And the skies are not cloudy all day
+                    [5, 2, 2], [3, 2, 1], [2, 2, 2], [1, 2, 1],
+                    [2, 2, 2], [3, 2, 1], [1, 2, 3]
+                ]
+            },
+            {
+                name: "Simple Gifts",
+                tempo: 100,
+                notes: [
+                    // 'Tis the gift to be simple, 'tis the gift to be free
+                    [5, 1, 1], [1, 2, 1], [1, 2, 1], [1, 2, 1], [2, 2, 1], [3, 2, 1], [3, 2, 1], [3, 2, 1],
+                    [2, 2, 1], [3, 2, 1], [4, 2, 1], [5, 2, 1], [5, 2, 2],
+                    // 'Tis the gift to come down where we ought to be
+                    [5, 2, 1], [5, 2, 1], [6, 2, 1], [5, 2, 1], [3, 2, 1], [2, 2, 1], [1, 2, 2],
+                    [2, 2, 1], [3, 2, 1], [2, 2, 1], [1, 2, 1], [6, 1, 1], [5, 1, 1], [5, 1, 2],
+                    // And when we find ourselves in the place just right
+                    [5, 1, 1], [1, 2, 1], [1, 2, 1], [1, 2, 1], [2, 2, 1], [3, 2, 1], [3, 2, 1], [3, 2, 1],
+                    [2, 2, 1], [3, 2, 1], [4, 2, 1], [5, 2, 1], [5, 2, 2],
+                    // 'Twill be in the valley of love and delight
+                    [5, 2, 1], [5, 2, 1], [6, 2, 1], [5, 2, 1], [3, 2, 1], [2, 2, 1], [1, 2, 2],
+                    [2, 2, 1], [3, 2, 1], [2, 2, 1], [1, 2, 1], [1, 2, 3]
+                ]
+            },
+            {
+                name: "Twinkle Twinkle",
+                tempo: 100,
+                notes: [
+                    // Twinkle twinkle little star
+                    [1, 2, 1], [1, 2, 1], [5, 2, 1], [5, 2, 1], [6, 2, 1], [6, 2, 1], [5, 2, 2],
+                    // How I wonder what you are
+                    [4, 2, 1], [4, 2, 1], [3, 2, 1], [3, 2, 1], [2, 2, 1], [2, 2, 1], [1, 2, 2],
+                    // Up above the world so high
+                    [5, 2, 1], [5, 2, 1], [4, 2, 1], [4, 2, 1], [3, 2, 1], [3, 2, 1], [2, 2, 2],
+                    // Like a diamond in the sky
+                    [5, 2, 1], [5, 2, 1], [4, 2, 1], [4, 2, 1], [3, 2, 1], [3, 2, 1], [2, 2, 2],
+                    // Twinkle twinkle little star
+                    [1, 2, 1], [1, 2, 1], [5, 2, 1], [5, 2, 1], [6, 2, 1], [6, 2, 1], [5, 2, 2],
+                    // How I wonder what you are
+                    [4, 2, 1], [4, 2, 1], [3, 2, 1], [3, 2, 1], [2, 2, 1], [2, 2, 1], [1, 2, 2]
+                ]
+            }
+        ];
+
+        // Map scale degree + octave to semitones from root
+        function degreeToSemitones(degree, octave) {
+            if (degree < 0) return null; // Rest
+            const degreeMap = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+            const baseSemitones = degreeMap[degree] || 0;
+            if (octave === 1) return baseSemitones - 12; // Low octave
+            if (octave === 2) return baseSemitones;      // Middle octave
+            return baseSemitones + 12;                   // High octave
+        }
+
+        // Flute synthesizer using Web Audio API
+        class FluteSynth {
+            constructor() {
+                this.audioContext = null;
+                this.activeNodes = [];
+            }
+
+            init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+            }
+
+            getFrequency(keyOffset, semitones) {
+                // A4 = 440Hz, calculate frequency for any note
+                // Key F (5) at root (semitones 0) = F4 = 349.23 Hz
+                const rootFreq = 440 * Math.pow(2, (keyOffset - 9) / 12); // F4 when keyOffset=5
+                return rootFreq * Math.pow(2, semitones / 12);
+            }
+
+            playNote(frequency, duration, startTime) {
+                const ctx = this.audioContext;
+
+                // Main oscillator (sine for flute-like pure tone)
+                const osc1 = ctx.createOscillator();
+                osc1.type = 'sine';
+                osc1.frequency.value = frequency;
+
+                // Second harmonic (octave, quieter)
+                const osc2 = ctx.createOscillator();
+                osc2.type = 'sine';
+                osc2.frequency.value = frequency * 2;
+
+                // Third harmonic (even quieter)
+                const osc3 = ctx.createOscillator();
+                osc3.type = 'sine';
+                osc3.frequency.value = frequency * 3;
+
+                // Gain nodes for mixing harmonics
+                const gain1 = ctx.createGain();
+                const gain2 = ctx.createGain();
+                const gain3 = ctx.createGain();
+
+                gain1.gain.value = 0.5;
+                gain2.gain.value = 0.15;
+                gain3.gain.value = 0.05;
+
+                // Master envelope
+                const envelope = ctx.createGain();
+                envelope.gain.setValueAtTime(0, startTime);
+                envelope.gain.linearRampToValueAtTime(0.4, startTime + 0.05); // Attack
+                envelope.gain.exponentialRampToValueAtTime(0.3, startTime + 0.1); // Decay
+                envelope.gain.setValueAtTime(0.3, startTime + duration - 0.05); // Sustain
+                envelope.gain.exponentialRampToValueAtTime(0.001, startTime + duration); // Release
+
+                // Connect oscillators through gains to envelope
+                osc1.connect(gain1).connect(envelope);
+                osc2.connect(gain2).connect(envelope);
+                osc3.connect(gain3).connect(envelope);
+                envelope.connect(ctx.destination);
+
+                // Schedule start/stop
+                osc1.start(startTime);
+                osc2.start(startTime);
+                osc3.start(startTime);
+                osc1.stop(startTime + duration);
+                osc2.stop(startTime + duration);
+                osc3.stop(startTime + duration);
+
+                this.activeNodes.push(osc1, osc2, osc3);
+            }
+
+            stop() {
+                this.activeNodes.forEach(node => {
+                    try { node.stop(); } catch (e) {}
+                });
+                this.activeNodes = [];
+            }
+        }
+
+        // Melody player with highlighting
+        class MelodyPlayer {
+            constructor() {
+                this.synth = new FluteSynth();
+                this.isPlaying = false;
+                this.timeouts = [];
+            }
+
+            play(melodyIndex, keyOffset, tempo) {
+                this.stop();
+                this.synth.init();
+                this.isPlaying = true;
+
+                const melody = melodies[melodyIndex];
+                const beatsPerSecond = tempo / 60;
+                let currentTime = this.synth.audioContext.currentTime + 0.1;
+                const startTime = currentTime;
+
+                melody.notes.forEach((note, i) => {
+                    const [degree, octave, beats] = note;
+                    const duration = beats / beatsPerSecond;
+                    const semitones = degreeToSemitones(degree, octave);
+
+                    if (semitones !== null) {
+                        const freq = this.synth.getFrequency(keyOffset, semitones);
+                        this.synth.playNote(freq, duration * 0.9, currentTime);
+
+                        // Schedule highlighting
+                        const highlightDelay = (currentTime - startTime) * 1000;
+                        const timeout = setTimeout(() => {
+                            if (this.isPlaying) highlightFingering(semitones);
+                        }, highlightDelay);
+                        this.timeouts.push(timeout);
+                    }
+
+                    currentTime += duration;
+                });
+
+                // Schedule end
+                const endTimeout = setTimeout(() => {
+                    this.isPlaying = false;
+                    clearHighlight();
+                    updatePlayButton();
+                }, (currentTime - startTime) * 1000);
+                this.timeouts.push(endTimeout);
+            }
+
+            stop() {
+                this.isPlaying = false;
+                this.synth.stop();
+                this.timeouts.forEach(t => clearTimeout(t));
+                this.timeouts = [];
+                clearHighlight();
+            }
+        }
+
+        // Highlighting functions
+        function highlightFingering(semitones) {
+            clearHighlight();
+            const card = document.querySelector(`[data-semitones="${semitones}"]`);
+            if (card) {
+                card.classList.add('highlighted');
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function clearHighlight() {
+            document.querySelectorAll('.fingering-card.highlighted').forEach(c => {
+                c.classList.remove('highlighted');
+            });
+        }
+
+        // Global player instance
+        const player = new MelodyPlayer();
+
+        function updatePlayButton() {
+            const btn = document.getElementById('play-btn');
+            btn.textContent = player.isPlaying ? '⏸ Pause' : '▶ Play';
+        }
+
         function getNoteName(keyOffset, semitoneOffset) {
             // Handle negative semitones with +12 to ensure positive modulo
             const noteIndex = ((keyOffset + semitoneOffset) % 12 + 12) % 12;
@@ -313,6 +675,7 @@
 
             const card = document.createElement('div');
             card.className = 'fingering-card' + (isChromatic ? ' chromatic' : '');
+            card.dataset.semitones = fingering.semitones;
 
             let holesHtml = '';
             for (let i = 0; i < 6; i++) {
@@ -363,6 +726,37 @@
 
         document.getElementById('key-select').addEventListener('change', updateChart);
         updateChart();
+
+        // Melody playback controls
+        const tempoSlider = document.getElementById('tempo-slider');
+        const tempoDisplay = document.getElementById('tempo-display');
+
+        tempoSlider.addEventListener('input', () => {
+            tempoDisplay.textContent = `${tempoSlider.value} BPM`;
+        });
+
+        document.getElementById('play-btn').addEventListener('click', () => {
+            if (player.isPlaying) {
+                player.stop();
+            } else {
+                const melodyIndex = parseInt(document.getElementById('melody-select').value);
+                const keyOffset = parseInt(document.getElementById('key-select').value);
+                const tempo = parseInt(tempoSlider.value);
+                player.play(melodyIndex, keyOffset, tempo);
+            }
+            updatePlayButton();
+        });
+
+        document.getElementById('stop-btn').addEventListener('click', () => {
+            player.stop();
+            updatePlayButton();
+        });
+
+        // Stop playback when key changes
+        document.getElementById('key-select').addEventListener('change', () => {
+            player.stop();
+            updatePlayButton();
+        });
     </script>
 </body>
 </html>
