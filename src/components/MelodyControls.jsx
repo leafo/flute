@@ -1,6 +1,19 @@
 import React from 'react';
 import { melodies } from '../data/melodies.js';
 
+// Group melodies by category
+function getMelodiesByCategory() {
+    const groups = {};
+    melodies.forEach((m, i) => {
+        const category = m.category || 'Other';
+        if (!groups[category]) {
+            groups[category] = [];
+        }
+        groups[category].push({ ...m, index: i });
+    });
+    return groups;
+}
+
 export function MelodyControls({
     selectedMelody,
     onMelodyChange,
@@ -10,6 +23,8 @@ export function MelodyControls({
     tempo,
     onTempoChange
 }) {
+    const melodiesByCategory = getMelodiesByCategory();
+
     return (
         <div className="melody-section">
             <div className="melody-selector">
@@ -18,8 +33,12 @@ export function MelodyControls({
                     value={selectedMelody}
                     onChange={(e) => onMelodyChange(parseInt(e.target.value))}
                 >
-                    {melodies.map((m, i) => (
-                        <option key={i} value={i}>{m.name}</option>
+                    {Object.entries(melodiesByCategory).map(([category, categoryMelodies]) => (
+                        <optgroup key={category} label={category}>
+                            {categoryMelodies.map((m) => (
+                                <option key={m.index} value={m.index}>{m.name}</option>
+                            ))}
+                        </optgroup>
                     ))}
                 </select>
             </div>
