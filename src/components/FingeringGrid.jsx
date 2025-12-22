@@ -1,7 +1,7 @@
 import React from 'react';
 import { FingeringCard } from './FingeringCard.jsx';
 
-export function FingeringGrid({ fingerings, keyOffset, isChromatic, highlightedSemitones }) {
+export function FingeringGrid({ fingerings, keyOffset, isChromatic, highlightedSemitones, onPlayNote }) {
     return (
         <div className="fingering-grid">
             {fingerings.map((f, i) => (
@@ -11,6 +11,7 @@ export function FingeringGrid({ fingerings, keyOffset, isChromatic, highlightedS
                     keyOffset={keyOffset}
                     isChromatic={isChromatic}
                     isHighlighted={highlightedSemitones === f.semitones}
+                    onPlayNote={onPlayNote}
                 />
             ))}
         </div>

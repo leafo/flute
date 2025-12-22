@@ -1,7 +1,7 @@
 import React from 'react';
 import { getNoteName } from '../data/fingerings.js';
 
-export function FingeringCard({ fingering, keyOffset, isChromatic, isHighlighted }) {
+export function FingeringCard({ fingering, keyOffset, isChromatic, isHighlighted, onPlayNote }) {
     const noteName = getNoteName(keyOffset, fingering.semitones);
     const degree = fingering.degree || '';
 
@@ -11,8 +11,14 @@ export function FingeringCard({ fingering, keyOffset, isChromatic, isHighlighted
         isHighlighted ? 'highlighted' : ''
     ].filter(Boolean).join(' ');
 
+    const handleClick = () => {
+        if (onPlayNote) {
+            onPlayNote(fingering.semitones);
+        }
+    };
+
     return (
-        <div className={classNames} data-semitones={fingering.semitones}>
+        <div className={classNames} data-semitones={fingering.semitones} onClick={handleClick}>
             <div className="note-name">{noteName}</div>
             <div className="note-octave">{fingering.octave} · {degree}</div>
             <div className="dizi-diagram">

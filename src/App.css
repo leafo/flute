@@ -124,11 +124,26 @@ h1 {
     text-align: center;
     border: 1px solid rgba(255,255,255,0.1);
     width: 58px;
+    cursor: pointer;
+    transition: transform 0.1s ease-out, border-color 0.1s ease-out;
+}
+
+.fingering-card:hover {
+    border-color: rgba(243, 156, 18, 0.5);
+    transform: scale(1.03);
+}
+
+.fingering-card:active {
+    transform: scale(0.97);
 }
 
 .fingering-card.chromatic {
     background: rgba(255,255,255,0.02);
     border-color: rgba(255,255,255,0.05);
+}
+
+.fingering-card.chromatic:hover {
+    border-color: rgba(155, 89, 182, 0.5);
 }
 
 .fingering-card.highlighted {
@@ -253,6 +268,42 @@ h1 {
 .tempo-value {
     color: #f39c12;
     min-width: 45px;
+}
+
+.progress-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    flex-basis: 100%;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.progress-tick {
+    width: 4px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1px;
+}
+
+.progress-tick.active {
+    background: #f39c12;
+    box-shadow: 0 0 4px #f39c12;
+}
+
+.progress-tick.rest {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.progress-tick.rest.active {
+    border-color: #f39c12;
+    background: transparent;
+    box-shadow: 0 0 4px #f39c12;
 }
 
 footer {

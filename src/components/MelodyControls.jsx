@@ -20,8 +20,11 @@ export function MelodyControls({
     isPlaying,
     onPlay,
     onStop,
+    onStep,
+    onSeek,
     tempo,
-    onTempoChange
+    onTempoChange,
+    currentNoteIndex
 }) {
     const melodiesByCategory = getMelodiesByCategory();
 
@@ -47,6 +50,19 @@ export function MelodyControls({
                     {isPlaying ? '⏸ Pause' : '▶ Play'}
                 </button>
                 <button id="stop-btn" onClick={onStop}>■ Stop</button>
+                <button
+                    id="step-btn"
+                    onClick={onStep}
+                    onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            onSeek(-1);
+                        } else if (e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            onSeek(1);
+                        }
+                    }}
+                >⏭ Step</button>
             </div>
             <div className="tempo-control">
                 <label>Tempo:</label>
@@ -59,6 +75,18 @@ export function MelodyControls({
                     onChange={(e) => onTempoChange(parseInt(e.target.value))}
                 />
                 <span className="tempo-value" id="tempo-display">{tempo} BPM</span>
+            </div>
+            <div className="progress-indicator">
+                {melodies[selectedMelody]?.notes?.map((note, i) => {
+                    const isRest = note[0] < 0;
+                    const isActive = currentNoteIndex === i;
+                    return (
+                        <div
+                            key={i}
+                            className={`progress-tick ${isActive ? 'active' : ''} ${isRest ? 'rest' : ''}`}
+                        />
+                    );
+                })}
             </div>
         </div>
     );

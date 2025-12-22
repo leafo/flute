@@ -95,42 +95,50 @@ export class FluteSynth {
 
 // Melody player with highlighting callback
 export class MelodyPlayer {
-    constructor(onNoteChange, onPlaybackEnd) {
+    constructor(onNoteChange, onPlaybackEnd, onIndexChange) {
         this.synth = new FluteSynth();
         this.isPlaying = false;
         this.timeouts = [];
         this.onNoteChange = onNoteChange;
         this.onPlaybackEnd = onPlaybackEnd;
+        this.onIndexChange = onIndexChange;
+        // Step mode state
+        this.currentMelody = null;
+        this.currentNoteIndex = 0;
     }
 
     play(melodyIndex, keyOffset, tempo) {
         this.stop();
         this.synth.init();
         this.isPlaying = true;
+        this.currentMelody = melodyIndex;
+        this.currentNoteIndex = 0;
 
         const melody = melodies[melodyIndex];
         const beatsPerSecond = tempo / 60;
         let currentTime = this.synth.audioContext.currentTime + 0.1;
         const startTime = currentTime;
 
-        melody.notes.forEach((note) => {
+        melody.notes.forEach((note, index) => {
             const [degree, octave, beats] = note;
             const duration = beats / beatsPerSecond;
             const semitones = degreeToSemitones(degree, octave);
 
+            const freq = this.synth.getFrequency(keyOffset, semitones);
             if (semitones !== null) {
-                const freq = this.synth.getFrequency(keyOffset, semitones);
                 this.synth.playNote(freq, duration * 0.9, currentTime);
-
-                // Schedule highlighting
-                const highlightDelay = (currentTime - startTime) * 1000;
-                const timeout = setTimeout(() => {
-                    if (this.isPlaying && this.onNoteChange) {
-                        this.onNoteChange(semitones);
-                    }
-                }, highlightDelay);
-                this.timeouts.push(timeout);
             }
+
+            // Schedule highlighting and index update
+            const highlightDelay = (currentTime - startTime) * 1000;
+            const timeout = setTimeout(() => {
+                if (this.isPlaying) {
+                    this.currentNoteIndex = index;
+                    if (this.onNoteChange) this.onNoteChange(semitones);
+                    if (this.onIndexChange) this.onIndexChange(index);
+                }
+            }, highlightDelay);
+            this.timeouts.push(timeout);
 
             currentTime += duration;
         });
@@ -139,6 +147,7 @@ export class MelodyPlayer {
         const endTimeout = setTimeout(() => {
             this.isPlaying = false;
             if (this.onNoteChange) this.onNoteChange(null);
+            if (this.onIndexChange) this.onIndexChange(null);
             if (this.onPlaybackEnd) this.onPlaybackEnd();
         }, (currentTime - startTime) * 1000);
         this.timeouts.push(endTimeout);
@@ -150,5 +159,63 @@ export class MelodyPlayer {
         this.timeouts.forEach(t => clearTimeout(t));
         this.timeouts = [];
         if (this.onNoteChange) this.onNoteChange(null);
+        if (this.onIndexChange) this.onIndexChange(null);
+    }
+
+    step(melodyIndex, keyOffset, tempo) {
+        // Reset if melody changed
+        if (this.currentMelody !== melodyIndex) {
+            this.currentMelody = melodyIndex;
+            this.currentNoteIndex = 0;
+        }
+
+        this.synth.stop();
+        this.synth.init();
+        const melody = melodies[melodyIndex];
+
+        // Reset at end of melody
+        if (this.currentNoteIndex >= melody.notes.length) {
+            this.currentNoteIndex = 0;
+            if (this.onNoteChange) this.onNoteChange(null);
+            if (this.onIndexChange) this.onIndexChange(null);
+            return;
+        }
+
+        const [degree, octave, beats] = melody.notes[this.currentNoteIndex];
+        const semitones = degreeToSemitones(degree, octave);
+        const beatsPerSecond = tempo / 60;
+        const duration = beats / beatsPerSecond;
+
+        if (this.onIndexChange) this.onIndexChange(this.currentNoteIndex);
+        if (semitones !== null) {
+            const freq = this.synth.getFrequency(keyOffset, semitones);
+            this.synth.playNote(freq, duration * 0.9, this.synth.audioContext.currentTime);
+            if (this.onNoteChange) this.onNoteChange(semitones);
+        }
+
+        this.currentNoteIndex++;
+    }
+
+    resetStep() {
+        this.currentNoteIndex = 0;
+        this.currentMelody = null;
+        if (this.onNoteChange) this.onNoteChange(null);
+        if (this.onIndexChange) this.onIndexChange(null);
+    }
+
+    seek(melodyIndex, keyOffset, delta) {
+        if (this.currentMelody !== melodyIndex) {
+            this.currentMelody = melodyIndex;
+            this.currentNoteIndex = 0;
+        }
+
+        const melody = melodies[melodyIndex];
+        this.currentNoteIndex = Math.max(0, Math.min(melody.notes.length - 1, this.currentNoteIndex + delta));
+
+        const [degree, octave] = melody.notes[this.currentNoteIndex];
+        const semitones = degreeToSemitones(degree, octave);
+
+        if (this.onNoteChange) this.onNoteChange(semitones);
+        if (this.onIndexChange) this.onIndexChange(this.currentNoteIndex);
     }
 }
