@@ -1,0 +1,12 @@
+# name: We Wish You a Merry Christmas
+# category: Christmas
+# tempo: 140
+
+# We wish you a merry Christmas
+g4 c5 c/2 d/2 c/2 b4/2 a a
+# We wish you a merry Christmas
+a d5 d/2 e/2 d/2 c/2 b4 g
+# We wish you a merry Christmas
+g e5 e/2 d/2 c/2 d/2 b4 f
+# And a happy new year
+c5 a4 a g c5*2
