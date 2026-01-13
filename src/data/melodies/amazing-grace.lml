@@ -2,15 +2,74 @@
 # category: Traditional American
 # tempo: 72
 
-# Amazing grace, how sweet the sound
-g3 c4*2 e/2 c/2 e*2 d
-c*2 a3 g*2 r
-# That saved a wretch like me
-g c4*2 e/2 c/2 e*2 d
-g*3 r
-# I once was lost but now am found
-g e*2 g/2 e/2 g*2 e
-c*2 a3 g*2 r
-# Was blind but now I see
-g c4*2 e/2 c/2 e*2 d
-c*3
+# from https://upload.wikimedia.org/score/3/o/3oaqgxwi82wlpo8s51p8qh3exvi7iki/3oaqgxwi.png
+
+ts3/4
+ks1
+
+m {
+  r*2 d
+}
+
+m {
+  g*2
+  {dt b g}
+}
+
+m {
+  b*2 a
+}
+
+m {
+  g*2 e
+}
+
+m {
+  d*2 d
+}
+
+m {
+  g*2 
+  {dt b g}
+}
+
+m {
+  b*2 a
+}
+
+m {
+  d*2 b
+}
+
+m {
+  d.
+  {dt b d b}
+}
+
+m {
+  g*2 d
+}
+
+m {
+  e.
+  {dt g g e}
+}
+
+m {
+  d*2 d
+}
+
+m {
+  g*2 {dt b g}
+}
+
+m {
+  b*2 a
+}
+
+m {
+  g*3
+}
+
+
+
