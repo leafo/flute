@@ -1,13 +1,60 @@
-import { melodies } from '../data/melodies.js';
+import { parseNote, MIDDLE_C_PITCH } from '@leafo/lml';
 
-// Map scale degree + octave to semitones from root
-export function degreeToSemitones(degree, octave) {
-    if (degree < 0) return null; // Rest
-    const degreeMap = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
-    const baseSemitones = degreeMap[degree] || 0;
-    if (octave === 1) return baseSemitones - 12; // Low octave
-    if (octave === 2) return baseSemitones;      // Middle octave
-    return baseSemitones + 12;                   // High octave
+// Dizi range relative to key root (semitones)
+const DIZI_RANGE_LOW = -5;   // low 5 (筒音)
+const DIZI_RANGE_HIGH = 16;  // high 3
+
+/**
+ * Calculate octave shift needed to fit melody within dizi range
+ * @param {string} lowestNote - e.g., "C4"
+ * @param {string} highestNote - e.g., "G5"
+ * @param {number} keyOffset - semitones from C (0-11)
+ * @returns {number} - number of octaves to shift (positive = up)
+ */
+function calculateOctaveShift(lowestNote, highestNote, keyOffset) {
+    const keyRootPitch = MIDDLE_C_PITCH + keyOffset;
+    const diziLow = keyRootPitch + DIZI_RANGE_LOW;
+    const diziHigh = keyRootPitch + DIZI_RANGE_HIGH;
+
+    const melodyLow = parseNote(lowestNote);
+    const melodyHigh = parseNote(highestNote);
+
+    if (melodyLow < diziLow) {
+        return Math.ceil((diziLow - melodyLow) / 12);
+    }
+    if (melodyHigh > diziHigh) {
+        return -Math.ceil((melodyHigh - diziHigh) / 12);
+    }
+    return 0;
+}
+
+/**
+ * Transpose a track to fit the target key and dizi range
+ * @param {import('@leafo/lml').SongNoteList} track
+ * @param {number} songKeyOffset - original song key offset (0-11)
+ * @param {number} targetKeyOffset - target dizi key offset (0-11)
+ * @returns {import('@leafo/lml').SongNoteList} - transposed track
+ */
+function transposeTrackForKey(track, songKeyOffset, targetKeyOffset) {
+    // Calculate key transposition
+    const keyTransposition = targetKeyOffset - songKeyOffset;
+
+    // Apply key transposition
+    let transposedTrack = keyTransposition !== 0
+        ? track.transpose(keyTransposition)
+        : track;
+
+    // Fit to dizi range (octave shifts)
+    const range = transposedTrack.noteRange();
+    if (range) {
+        const [lowest, highest] = range;
+        const octaveShift = calculateOctaveShift(lowest, highest, targetKeyOffset);
+        if (octaveShift !== 0) {
+            transposedTrack = transposedTrack.transpose(octaveShift * 12);
+        }
+    }
+
+    return transposedTrack;
 }
 
 // Flute synthesizer using Web Audio API
@@ -31,6 +78,11 @@ export class FluteSynth {
         // Key F (5) at root (semitones 0) = F4 = 349.23 Hz
         const rootFreq = 440 * Math.pow(2, (keyOffset - 9) / 12);
         return rootFreq * Math.pow(2, semitones / 12);
+    }
+
+    getFrequencyFromPitch(midiPitch) {
+        // Convert MIDI pitch to frequency (A4 = 440Hz = MIDI 69)
+        return 440 * Math.pow(2, (midiPitch - 69) / 12);
     }
 
     playNote(frequency, duration, startTime) {
@@ -107,49 +159,58 @@ export class MelodyPlayer {
         this.currentNoteIndex = 0;
     }
 
-    play(melodyIndex, keyOffset, tempo) {
+    play(melody, keyOffset, tempo) {
         this.stop();
         this.synth.init();
         this.isPlaying = true;
-        this.currentMelody = melodyIndex;
+        this.currentMelody = melody;
         this.currentNoteIndex = 0;
 
-        const melody = melodies[melodyIndex];
+        const { track, startOffset, songKeyOffset } = melody;
+
+        // Transpose track to target key and fit to dizi range
+        const transposedTrack = transposeTrackForKey(track, songKeyOffset, keyOffset);
+
         const beatsPerSecond = tempo / 60;
-        let currentTime = this.synth.audioContext.currentTime + 0.1;
-        const startTime = currentTime;
+        const keyRootPitch = MIDDLE_C_PITCH + keyOffset;
+        const audioStartTime = this.synth.audioContext.currentTime + 0.1;
 
-        melody.notes.forEach((note, index) => {
-            const [degree, octave, beats] = note;
-            const duration = beats / beatsPerSecond;
-            const semitones = degreeToSemitones(degree, octave);
+        // Convert track to array for indexing
+        const notes = [...transposedTrack];
 
-            const freq = this.synth.getFrequency(keyOffset, semitones);
-            if (semitones !== null) {
-                this.synth.playNote(freq, duration * 0.9, currentTime);
-            }
+        notes.forEach((songNote, index) => {
+            const pitch = parseNote(songNote.note);
+            const freq = this.synth.getFrequencyFromPitch(pitch);
+            const noteStartBeats = songNote.start - startOffset;
+            const noteStartTime = audioStartTime + (noteStartBeats / beatsPerSecond);
+            const duration = songNote.duration / beatsPerSecond;
+
+            // Play the note
+            this.synth.playNote(freq, duration * 0.9, noteStartTime);
+
+            // Calculate relative semitones for fingering highlight
+            const relativeSemitones = pitch - keyRootPitch;
 
             // Schedule highlighting and index update
-            const highlightDelay = (currentTime - startTime) * 1000;
+            const highlightDelay = (noteStartTime - audioStartTime) * 1000;
             const timeout = setTimeout(() => {
                 if (this.isPlaying) {
                     this.currentNoteIndex = index;
-                    if (this.onNoteChange) this.onNoteChange(semitones);
+                    if (this.onNoteChange) this.onNoteChange(relativeSemitones);
                     if (this.onIndexChange) this.onIndexChange(index);
                 }
             }, highlightDelay);
             this.timeouts.push(timeout);
-
-            currentTime += duration;
         });
 
-        // Schedule end
+        // Schedule end based on track duration
+        const totalDuration = (transposedTrack.getStopInBeats() - startOffset) / beatsPerSecond;
         const endTimeout = setTimeout(() => {
             this.isPlaying = false;
             if (this.onNoteChange) this.onNoteChange(null);
             if (this.onIndexChange) this.onIndexChange(null);
             if (this.onPlaybackEnd) this.onPlaybackEnd();
-        }, (currentTime - startTime) * 1000);
+        }, totalDuration * 1000);
         this.timeouts.push(endTimeout);
     }
 
@@ -162,36 +223,42 @@ export class MelodyPlayer {
         if (this.onIndexChange) this.onIndexChange(null);
     }
 
-    step(melodyIndex, keyOffset, tempo) {
+    step(melody, keyOffset, tempo) {
         // Reset if melody changed
-        if (this.currentMelody !== melodyIndex) {
-            this.currentMelody = melodyIndex;
+        if (this.currentMelody !== melody) {
+            this.currentMelody = melody;
             this.currentNoteIndex = 0;
         }
 
         this.synth.stop();
         this.synth.init();
-        const melody = melodies[melodyIndex];
+        const { track, songKeyOffset } = melody;
+
+        // Transpose track to target key and fit to dizi range
+        const transposedTrack = transposeTrackForKey(track, songKeyOffset, keyOffset);
+        const notes = [...transposedTrack];
 
         // Reset at end of melody
-        if (this.currentNoteIndex >= melody.notes.length) {
+        if (this.currentNoteIndex >= notes.length) {
             this.currentNoteIndex = 0;
             if (this.onNoteChange) this.onNoteChange(null);
             if (this.onIndexChange) this.onIndexChange(null);
             return;
         }
 
-        const [degree, octave, beats] = melody.notes[this.currentNoteIndex];
-        const semitones = degreeToSemitones(degree, octave);
+        const songNote = notes[this.currentNoteIndex];
+        const pitch = parseNote(songNote.note);
+        const freq = this.synth.getFrequencyFromPitch(pitch);
         const beatsPerSecond = tempo / 60;
-        const duration = beats / beatsPerSecond;
+        const duration = songNote.duration / beatsPerSecond;
+
+        // Calculate relative semitones for fingering highlight
+        const keyRootPitch = MIDDLE_C_PITCH + keyOffset;
+        const relativeSemitones = pitch - keyRootPitch;
 
         if (this.onIndexChange) this.onIndexChange(this.currentNoteIndex);
-        if (semitones !== null) {
-            const freq = this.synth.getFrequency(keyOffset, semitones);
-            this.synth.playNote(freq, duration * 0.9, this.synth.audioContext.currentTime);
-            if (this.onNoteChange) this.onNoteChange(semitones);
-        }
+        this.synth.playNote(freq, duration * 0.9, this.synth.audioContext.currentTime);
+        if (this.onNoteChange) this.onNoteChange(relativeSemitones);
 
         this.currentNoteIndex++;
     }
@@ -203,19 +270,27 @@ export class MelodyPlayer {
         if (this.onIndexChange) this.onIndexChange(null);
     }
 
-    seek(melodyIndex, keyOffset, delta) {
-        if (this.currentMelody !== melodyIndex) {
-            this.currentMelody = melodyIndex;
+    seek(melody, keyOffset, delta) {
+        if (this.currentMelody !== melody) {
+            this.currentMelody = melody;
             this.currentNoteIndex = 0;
         }
 
-        const melody = melodies[melodyIndex];
-        this.currentNoteIndex = Math.max(0, Math.min(melody.notes.length - 1, this.currentNoteIndex + delta));
+        const { track, songKeyOffset } = melody;
 
-        const [degree, octave] = melody.notes[this.currentNoteIndex];
-        const semitones = degreeToSemitones(degree, octave);
+        // Transpose track to target key and fit to dizi range
+        const transposedTrack = transposeTrackForKey(track, songKeyOffset, keyOffset);
+        const notes = [...transposedTrack];
+        this.currentNoteIndex = Math.max(0, Math.min(notes.length - 1, this.currentNoteIndex + delta));
 
-        if (this.onNoteChange) this.onNoteChange(semitones);
+        const songNote = notes[this.currentNoteIndex];
+        const pitch = parseNote(songNote.note);
+
+        // Calculate relative semitones for fingering highlight
+        const keyRootPitch = MIDDLE_C_PITCH + keyOffset;
+        const relativeSemitones = pitch - keyRootPitch;
+
+        if (this.onNoteChange) this.onNoteChange(relativeSemitones);
         if (this.onIndexChange) this.onIndexChange(this.currentNoteIndex);
     }
 }

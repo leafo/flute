@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TopBar } from './components/TopBar.jsx';
 import { MelodyControls } from './components/MelodyControls.jsx';
+import { CustomMelodyDialog } from './components/CustomMelodyDialog.jsx';
 import { FingeringGrid } from './components/FingeringGrid.jsx';
 import { diatonicFingerings, chromaticFingerings } from './data/fingerings.js';
+import { melodies } from './data/melodies.js';
+import { parseLmlMelody } from './data/lmlParser.js';
 import { MelodyPlayer, FluteSynth } from './audio/FluteSynth.js';
 import './App.css';
 
@@ -14,8 +17,20 @@ export function App() {
     const [highlightedSemitones, setHighlightedSemitones] = useState(null);
     const [currentNoteIndex, setCurrentNoteIndex] = useState(null);
 
+    // Custom melody state
+    const [customMelodyLml, setCustomMelodyLml] = useState(() =>
+        localStorage.getItem('customMelodyLml') || ''
+    );
+    const [customMelody, setCustomMelody] = useState(null);
+    const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+
     const playerRef = useRef(null);
     const synthRef = useRef(null);
+
+    // Resolve the current melody object
+    const currentMelody = selectedMelody === 'custom'
+        ? customMelody
+        : melodies[selectedMelody];
 
     useEffect(() => {
         synthRef.current = new FluteSynth();
@@ -35,6 +50,18 @@ export function App() {
         };
     }, []);
 
+    // Parse stored custom melody on mount
+    useEffect(() => {
+        if (customMelodyLml) {
+            try {
+                const parsed = parseLmlMelody(customMelodyLml);
+                setCustomMelody(parsed);
+            } catch (e) {
+                console.error('Failed to parse stored custom melody:', e);
+            }
+        }
+    }, []);
+
     const handleKeyChange = (key) => {
         setSelectedKey(key);
         if (playerRef.current) {
@@ -47,8 +74,8 @@ export function App() {
         if (isPlaying) {
             playerRef.current.stop();
             setIsPlaying(false);
-        } else {
-            playerRef.current.play(selectedMelody, selectedKey, tempo);
+        } else if (currentMelody) {
+            playerRef.current.play(currentMelody, selectedKey, tempo);
             setIsPlaying(true);
         }
     };
@@ -63,7 +90,9 @@ export function App() {
             playerRef.current.stop();
             setIsPlaying(false);
         }
-        playerRef.current.step(selectedMelody, selectedKey, tempo);
+        if (currentMelody) {
+            playerRef.current.step(currentMelody, selectedKey, tempo);
+        }
     };
 
     const handleMelodyChange = (index) => {
@@ -76,7 +105,29 @@ export function App() {
             playerRef.current.stop();
             setIsPlaying(false);
         }
-        playerRef.current.seek(selectedMelody, selectedKey, delta);
+        if (currentMelody) {
+            playerRef.current.seek(currentMelody, selectedKey, delta);
+        }
+    };
+
+    const handleOpenCustomDialog = () => {
+        setIsCustomDialogOpen(true);
+    };
+
+    const handleCloseCustomDialog = () => {
+        setIsCustomDialogOpen(false);
+    };
+
+    const handleSaveCustomMelody = (parsed, lmlText) => {
+        setCustomMelody(parsed);
+        setCustomMelodyLml(lmlText);
+        localStorage.setItem('customMelodyLml', lmlText);
+
+        if (parsed) {
+            setSelectedMelody('custom');
+        } else {
+            setSelectedMelody(0);
+        }
     };
 
     const handlePlayNote = (semitones) => {
@@ -98,7 +149,9 @@ export function App() {
 
             <MelodyControls
                 selectedMelody={selectedMelody}
+                customMelody={customMelody}
                 onMelodyChange={handleMelodyChange}
+                onOpenCustomDialog={handleOpenCustomDialog}
                 isPlaying={isPlaying}
                 onPlay={handlePlay}
                 onStop={handleStop}
@@ -107,6 +160,13 @@ export function App() {
                 tempo={tempo}
                 onTempoChange={setTempo}
                 currentNoteIndex={currentNoteIndex}
+            />
+
+            <CustomMelodyDialog
+                isOpen={isCustomDialogOpen}
+                onClose={handleCloseCustomDialog}
+                initialLml={customMelodyLml}
+                onSave={handleSaveCustomMelody}
             />
 
             <div className="section-title">Diatonic Notes</div>

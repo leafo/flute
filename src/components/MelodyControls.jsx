@@ -16,7 +16,9 @@ function getMelodiesByCategory() {
 
 export function MelodyControls({
     selectedMelody,
+    customMelody,
     onMelodyChange,
+    onOpenCustomDialog,
     isPlaying,
     onPlay,
     onStop,
@@ -28,13 +30,28 @@ export function MelodyControls({
 }) {
     const melodiesByCategory = getMelodiesByCategory();
 
+    // Resolve track for progress indicator
+    const currentTrack = selectedMelody === 'custom'
+        ? customMelody?.track
+        : melodies[selectedMelody]?.track;
+
+    const handleSelectChange = (e) => {
+        const value = e.target.value;
+        if (value === 'custom') {
+            onMelodyChange('custom');
+            onOpenCustomDialog();
+        } else {
+            onMelodyChange(parseInt(value));
+        }
+    };
+
     return (
         <div className="melody-section">
             <div className="melody-selector">
                 <select
                     id="melody-select"
                     value={selectedMelody}
-                    onChange={(e) => onMelodyChange(parseInt(e.target.value))}
+                    onChange={handleSelectChange}
                 >
                     {Object.entries(melodiesByCategory).map(([category, categoryMelodies]) => (
                         <optgroup key={category} label={category}>
@@ -43,7 +60,17 @@ export function MelodyControls({
                             ))}
                         </optgroup>
                     ))}
+                    <optgroup label="Custom">
+                        <option value="custom">
+                            {customMelody ? customMelody.name : 'Custom...'}
+                        </option>
+                    </optgroup>
                 </select>
+                {selectedMelody === 'custom' && (
+                    <button onClick={onOpenCustomDialog} className="edit-custom-btn">
+                        Edit
+                    </button>
+                )}
             </div>
             <div className="melody-controls">
                 <button id="play-btn" onClick={onPlay}>
@@ -77,13 +104,12 @@ export function MelodyControls({
                 <span className="tempo-value" id="tempo-display">{tempo} BPM</span>
             </div>
             <div className="progress-indicator">
-                {melodies[selectedMelody]?.notes?.map((note, i) => {
-                    const isRest = note[0] < 0;
+                {currentTrack && [...currentTrack].map((songNote, i) => {
                     const isActive = currentNoteIndex === i;
                     return (
                         <div
                             key={i}
-                            className={`progress-tick ${isActive ? 'active' : ''} ${isRest ? 'rest' : ''}`}
+                            className={`progress-tick ${isActive ? 'active' : ''}`}
                         />
                     );
                 })}

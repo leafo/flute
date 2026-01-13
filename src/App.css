@@ -292,23 +292,120 @@ h1 {
     box-shadow: 0 0 4px #f39c12;
 }
 
-.progress-tick.rest {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-}
-
-.progress-tick.rest.active {
-    border-color: #f39c12;
-    background: transparent;
-    box-shadow: 0 0 4px #f39c12;
-}
-
 footer {
     text-align: center;
     margin-top: 15px;
     font-size: 0.7rem;
     color: #555;
+}
+
+/* Custom Melody Dialog */
+.custom-melody-dialog {
+    background: #1a1a2e;
+    color: #eee;
+    border: 2px solid #9b59b6;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.custom-melody-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.custom-melody-dialog h2 {
+    margin: 0 0 10px 0;
+    color: #f39c12;
+    font-size: 1.2rem;
+}
+
+.custom-melody-dialog .dialog-help {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 15px;
+}
+
+.custom-melody-dialog code {
+    background: rgba(255,255,255,0.1);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+.custom-melody-dialog textarea {
+    width: 100%;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.85rem;
+    background: #0d0d1a;
+    color: #eee;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 10px;
+    resize: vertical;
+}
+
+.custom-melody-dialog textarea:focus {
+    outline: none;
+    border-color: #9b59b6;
+}
+
+.custom-melody-dialog .error-message {
+    color: #e74c3c;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(231, 76, 60, 0.1);
+    border-radius: 4px;
+}
+
+.custom-melody-dialog .dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.custom-melody-dialog button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.custom-melody-dialog button:not(.primary) {
+    background: rgba(255,255,255,0.1);
+    color: #eee;
+}
+
+.custom-melody-dialog button.primary {
+    background: #f39c12;
+    color: #1a1a2e;
+    font-weight: bold;
+}
+
+.custom-melody-dialog button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Edit button for custom melody */
+.melody-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-custom-btn {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #9b59b6;
+    background: transparent;
+    color: #9b59b6;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.edit-custom-btn:hover {
+    background: rgba(155, 89, 182, 0.2);
 }
