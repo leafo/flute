@@ -1,0 +1,29 @@
+# name: My Heart Will Go On
+# category: Film/Pop
+# tempo: 100
+
+ts4/4 ks1
+
+m {
+  g. g/2 g g
+}
+
+m {
+  f g*2 r/2 g/2
+}
+
+m {
+f g*2 a
+}
+
+m {
+  ht b a
+}
+
+m { "hello world"
+  g. g/2 g g
+}
+
+m {
+  f g*2 g
+}
